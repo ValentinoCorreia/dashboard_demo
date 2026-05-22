@@ -4,7 +4,7 @@ Simple AI gen Flask app. Used by me to demonstrate a Jenkins build Docker Pipeli
 
 
 
-### Prompt (IT)
+## Prompt (IT)
 Contiene un Dockerfile che esegue il build di un app **generata con Claude**.
 
 *Genera un applicativo Python Flask, che visualizza sulla root la seguente pagina:
