@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Applicazione Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;600;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0a0c10;
+      --surface:   #111418;
+      --border:    #1e2530;
+      --cpu-color: #00e5ff;
+      --ram-color: #ff4081;
+      --text:      #c8d6e5;
+      --muted:     #4a5568;
+      --label:     #8899aa;
+      --mono:      'Share Tech Mono', monospace;
+      --sans:      'Barlow', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1.5rem 3rem;
+    }
+
+    /* ── HEADER ── */
+    header {
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 2.8rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.2rem;
+      display: flex;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+
+    .header-badge {
+      width: 6px;
+      height: 42px;
+      background: linear-gradient(180deg, var(--cpu-color), var(--ram-color));
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #e8f0fe;
+      line-height: 1;
+    }
+
+    .header-text p {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: #4caf50;
+      letter-spacing: 0.1em;
+    }
+
+    .live-dot::before {
+      content: '';
+      width: 8px; height: 8px;
+      background: #4caf50;
+      border-radius: 50%;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ── GAUGES ── */
+    .gauges {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 1.8rem;
+    }
+
+    .gauge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.6rem 1.8rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .3s;
+    }
+
+    .gauge-card:hover { border-color: var(--muted); }
+
+    .gauge-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .gauge-card.cpu::after { background: var(--cpu-color); }
+    .gauge-card.ram::after { background: var(--ram-color); }
+
+    .gauge-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 0.5rem;
+    }
+
+    .gauge-value {
+      font-family: var(--mono);
+      font-size: 3.4rem;
+      line-height: 1;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+    }
+
+    .gauge-card.cpu .gauge-value { color: var(--cpu-color); }
+    .gauge-card.ram .gauge-value { color: var(--ram-color); }
+
+    .gauge-unit {
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin-left: 2px;
+    }
+
+    /* Progress bar */
+    .gauge-bar-track {
+      margin-top: 1rem;
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .gauge-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.6s ease;
+    }
+
+    .gauge-card.cpu  .gauge-bar-fill { background: var(--cpu-color); }
+    .gauge-card.ram  .gauge-bar-fill { background: var(--ram-color); }
+
+    /* ── CHART CARD ── */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.6rem 1.8rem;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+
+    .chart-title {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--label);
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 1.2rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 560px) {
+      .gauges { grid-template-columns: 1fr; }
+      .gauge-value { font-size: 2.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-badge"></div>
+    <div class="header-text">
+      <h1>Applicazione Demo</h1>
+      <p>System Monitor · aggiornamento ogni 2s</p>
+    </div>
+    <div class="live-dot">LIVE</div>
+  </header>
+
+  <div class="gauges">
+    <div class="gauge-card cpu">
+      <div class="gauge-label">CPU Usage</div>
+      <div class="gauge-value" id="cpu-val">—<span class="gauge-unit">%</span></div>
+      <div class="gauge-bar-track">
+        <div class="gauge-bar-fill" id="cpu-bar"></div>
+      </div>
+    </div>
+    <div class="gauge-card ram">
+      <div class="gauge-label">RAM Usage</div>
+      <div class="gauge-value" id="ram-val">—<span class="gauge-unit">%</span></div>
+      <div class="gauge-bar-track">
+        <div class="gauge-bar-fill" id="ram-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="chart-title">Storico — ultimi 6 minuti</span>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#00e5ff"></div> CPU
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#ff4081"></div> RAM
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="historyChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // ── Chart setup ──────────────────────────────────────────────
+    const ctx = document.getElementById('historyChart').getContext('2d');
+
+    const makeGradient = (color) => {
+      const g = ctx.createLinearGradient(0, 0, 0, 240);
+      g.addColorStop(0, color + '33');
+      g.addColorStop(1, color + '00');
+      return g;
+    };
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'CPU %',
+            data: [],
+            borderColor: '#00e5ff',
+            backgroundColor: makeGradient('#00e5ff'),
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.4,
+            fill: true,
+          },
+          {
+            label: 'RAM %',
+            data: [],
+            borderColor: '#ff4081',
+            backgroundColor: makeGradient('#ff4081'),
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.4,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        animation: { duration: 400 },
+        scales: {
+          x: {
+            ticks: {
+              color: '#4a5568',
+              font: { family: "'Share Tech Mono', monospace", size: 10 },
+              maxTicksLimit: 8,
+              maxRotation: 0,
+            },
+            grid: { color: '#1e2530' },
+          },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: {
+              color: '#4a5568',
+              font: { family: "'Share Tech Mono', monospace", size: 10 },
+              callback: v => v + '%',
+              stepSize: 25,
+            },
+            grid: { color: '#1e2530' },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#111418',
+            borderColor: '#1e2530',
+            borderWidth: 1,
+            titleColor: '#8899aa',
+            bodyColor: '#c8d6e5',
+            titleFont: { family: "'Share Tech Mono', monospace", size: 10 },
+            bodyFont:  { family: "'Share Tech Mono', monospace", size: 11 },
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`,
+            },
+          },
+        },
+      },
+    });
+
+    // ── Polling ──────────────────────────────────────────────────
+    async function fetchMetrics() {
+      try {
+        const res  = await fetch('/api/metrics');
+        const data = await res.json();
+
+        // Gauge cards
+        const cpu = data.current.cpu.toFixed(1);
+        const ram = data.current.ram.toFixed(1);
+
+        document.getElementById('cpu-val').innerHTML =
+          cpu + '<span class="gauge-unit">%</span>';
+        document.getElementById('ram-val').innerHTML =
+          ram + '<span class="gauge-unit">%</span>';
+
+        document.getElementById('cpu-bar').style.width = cpu + '%';
+        document.getElementById('ram-bar').style.width = ram + '%';
+
+        // Chart
+        chart.data.labels                = data.history.timestamps;
+        chart.data.datasets[0].data      = data.history.cpu;
+        chart.data.datasets[1].data      = data.history.ram;
+        chart.update('none');   // skip animation on data-only update
+
+      } catch (e) {
+        console.error('Errore fetch metriche:', e);
+      }
+    }
+
+    fetchMetrics();
+    setInterval(fetchMetrics, 2000);
+  </script>
+</body>
+</html>
